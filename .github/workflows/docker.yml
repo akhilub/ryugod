@@ -1,0 +1,56 @@
+name: Docker CI/CD
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: "16"
+
+      # - name: Install Docker Compose
+      #   run: |
+      #     sudo curl -L "https://github.com/docker/compose/releases/download/v2.24.5/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+      #     sudo chmod +x /usr/local/bin/docker-compose
+
+      - name: Build Frontend
+        run: |
+          cd ryugod
+          npm install
+          sudo npm install -g yarn
+          cp -rf src/components/basic-languages/ node_modules/monaco-editor/esm/vs/basic-languages/
+          yarn build
+          mv dist ../public
+          cp ../public/index.html ../public/404.html
+          # Copy content files to public directory
+          mkdir -p ../public/contents
+          cp -r ../contents/* ../public/contents/
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./public
+          cname: compiler.akhilsin.com
+
+      # - name: Login to GitHub Container Registry
+      #   uses: docker/login-action@v1
+      #   with:
+      #     registry: ghcr.io
+      #     username: ${{ github.actor }}
+      #     password: ${{ secrets.GITHUB_TOKEN }}
+
+      # - name: Build and Push Images
+      #   env:
+      #     GITHUB_REPOSITORY: akhilub/ryugod
+      #   run: |
+      #     docker-compose build
+      #     docker-compose push
